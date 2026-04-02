@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Safety-first spot grid strategy config",
+  "type": "object",
+  "required": ["meta", "runtime", "exchange", "market", "strategy", "risk", "persistence", "telemetry"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["schema_version"],
+      "additionalProperties": false,
+      "properties": {"schema_version": {"type": "string", "const": "1.0.0"}}
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["mode", "arm_live_trading"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": {"type": "string", "enum": ["paper", "live"], "default": "paper"},
+        "arm_live_trading": {"type": "boolean", "default": false}
+      }
+    },
+    "exchange": {
+      "type": "object",
+      "required": ["name", "credentials_env"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "credentials_env": {"type": "string", "minLength": 1}
+      }
+    },
+    "market": {
+      "type": "object",
+      "required": ["symbol", "price_source"],
+      "additionalProperties": false,
+      "properties": {
+        "symbol": {"type": "string", "minLength": 1},
+        "price_source": {"type": "string", "minLength": 1}
+      }
+    },
+    "strategy": {
+      "type": "object",
+      "required": ["grid_type", "spacing_type", "lower_price", "upper_price", "num_levels", "anchor_price_mode", "total_quote_allocation", "per_level_sizing_mode", "post_only", "time_in_force"],
+      "additionalProperties": false,
+      "properties": {
+        "grid_type": {"type": "string", "const": "static_neutral", "default": "static_neutral"},
+        "spacing_type": {"type": "string", "enum": ["arithmetic", "geometric"], "default": "arithmetic"},
+        "lower_price": {"type": "string"},
+        "upper_price": {"type": "string"},
+        "num_levels": {"type": "integer", "minimum": 2},
+        "anchor_price_mode": {"type": "string", "minLength": 1},
+        "total_quote_allocation": {"type": "string"},
+        "per_level_sizing_mode": {"type": "string", "minLength": 1},
+        "post_only": {"type": "boolean", "default": true},
+        "time_in_force": {"type": "string", "const": "GTC", "default": "GTC"}
+      }
+    },
+    "risk": {
+      "type": "object",
+      "required": ["max_inventory_base", "max_drawdown_pct", "max_daily_loss_quote", "max_reject_streak", "stale_market_data_seconds", "stale_private_stream_seconds", "max_reconciliation_mismatches"],
+      "additionalProperties": false,
+      "properties": {
+        "max_inventory_base": {"type": "string"},
+        "max_drawdown_pct": {"type": "string"},
+        "max_daily_loss_quote": {"type": "string"},
+        "max_reject_streak": {"type": "integer", "minimum": 1},
+        "stale_market_data_seconds": {"type": "integer", "minimum": 1},
+        "stale_private_stream_seconds": {"type": "integer", "minimum": 1},
+        "max_reconciliation_mismatches": {"type": "integer", "minimum": 1}
+      }
+    },
+    "persistence": {
+      "type": "object",
+      "required": ["sqlite_path", "snapshot_interval_seconds"],
+      "additionalProperties": false,
+      "properties": {
+        "sqlite_path": {"type": "string", "minLength": 1},
+        "snapshot_interval_seconds": {"type": "integer", "minimum": 1}
+      }
+    },
+    "telemetry": {
+      "type": "object",
+      "required": ["log_level"],
+      "additionalProperties": false,
+      "properties": {
+        "log_level": {"type": "string", "default": "INFO"}
+      }
+    }
+  }
+}
