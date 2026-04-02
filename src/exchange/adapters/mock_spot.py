@@ -4,18 +4,22 @@ from collections import deque
 from decimal import Decimal
 
 from domain.enums import OrderStatus
+from domain.errors import ValidationError
 from domain.models import BalanceSnapshot, CancelResult, FillEvent, MarketSnapshot, OpenOrder, OrderIntent, SymbolConstraints
 from exchange.base import SpotExchangeAdapter
+from exchange.symbols import canonical_symbol, mock_spot_venue_symbol
 from exchange.types import HealthStatus
 
 
 class MockSpotAdapter(SpotExchangeAdapter):
     def __init__(self) -> None:
+        self._canonical_symbol = "XRP/USD"
+        self._venue_symbol = mock_spot_venue_symbol(self._canonical_symbol)
         self.constraints = SymbolConstraints(
-            symbol="BTC-USDT",
-            tick_size=Decimal("0.1"),
-            step_size=Decimal("0.0001"),
-            min_qty=Decimal("0.0001"),
+            symbol=self._venue_symbol,
+            tick_size=Decimal("0.0001"),
+            step_size=Decimal("0.1"),
+            min_qty=Decimal("0.1"),
             min_notional=Decimal("5"),
             supports_post_only=True,
         )
@@ -24,21 +28,25 @@ class MockSpotAdapter(SpotExchangeAdapter):
         self.balance = BalanceSnapshot(
             free_quote=Decimal("100000"),
             locked_quote=Decimal("0"),
-            free_base=Decimal("1"),
+            free_base=Decimal("10000"),
             locked_base=Decimal("0"),
         )
-        self.market = MarketSnapshot(symbol="BTC-USDT", bid=Decimal("29999"), ask=Decimal("30001"))
+        self.market = MarketSnapshot(symbol=self._canonical_symbol, bid=Decimal("0.5990"), ask=Decimal("0.6010"))
 
     def load_symbol_constraints(self, symbol: str) -> SymbolConstraints:
+        self._assert_symbol(symbol)
         return self.constraints
 
     def fetch_balances(self, symbol: str) -> BalanceSnapshot:
+        self._assert_symbol(symbol)
         return self.balance
 
     def fetch_open_orders(self, symbol: str) -> list[OpenOrder]:
+        self._assert_symbol(symbol)
         return [o for o in self.orders.values() if o.status == OrderStatus.OPEN]
 
     def fetch_recent_fills(self, symbol: str) -> list[FillEvent]:
+        self._assert_symbol(symbol)
         return list(self.fills)
 
     def place_managed_order_intent(self, intent: OrderIntent) -> OpenOrder:
@@ -54,6 +62,7 @@ class MockSpotAdapter(SpotExchangeAdapter):
         return order
 
     def cancel_managed_order(self, symbol: str, client_order_id: str) -> CancelResult:
+        self._assert_symbol(symbol)
         order = self.orders.get(client_order_id)
         if not order:
             return CancelResult(client_order_id=client_order_id, canceled=False, reason="not_found")
@@ -61,12 +70,15 @@ class MockSpotAdapter(SpotExchangeAdapter):
         return CancelResult(client_order_id=client_order_id, canceled=True)
 
     def cancel_all_managed_orders(self, symbol: str) -> list[CancelResult]:
+        self._assert_symbol(symbol)
         return [self.cancel_managed_order(symbol, cid) for cid in list(self.orders.keys())]
 
     def read_market_data(self, symbol: str) -> MarketSnapshot:
+        self._assert_symbol(symbol)
         return self.market
 
     def read_private_updates(self, symbol: str) -> list[FillEvent]:
+        self._assert_symbol(symbol)
         out = list(self.fills)
         self.fills.clear()
         return out
@@ -78,3 +90,7 @@ class MockSpotAdapter(SpotExchangeAdapter):
         self.fills.append(fill)
         if fill.client_order_id in self.orders:
             self.orders[fill.client_order_id].status = OrderStatus.FILLED
+
+    def _assert_symbol(self, symbol: str) -> None:
+        if canonical_symbol(symbol) != self._canonical_symbol:
+            raise ValidationError(f"unsupported symbol {symbol}")

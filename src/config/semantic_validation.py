@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from domain.enums import RuntimeMode
 from domain.errors import ValidationError
+from exchange.symbols import canonical_symbol
 
 
 def _d(v: str) -> Decimal:
@@ -20,6 +21,7 @@ def semantic_validate(raw: dict, env: dict[str, str] | None = None) -> None:
     s = raw["strategy"]
     r = raw["risk"]
     mode = RuntimeMode(raw["runtime"]["mode"])
+    canonical_symbol(raw["market"]["symbol"])
 
     if _d(s["lower_price"]) >= _d(s["upper_price"]):
         raise ValidationError("lower_price must be < upper_price")

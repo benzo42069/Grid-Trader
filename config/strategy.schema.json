@@ -16,7 +16,7 @@
       "required": ["mode", "arm_live_trading"],
       "additionalProperties": false,
       "properties": {
-        "mode": {"type": "string", "enum": ["paper", "live"], "default": "paper"},
+        "mode": {"type": "string", "enum": ["paper", "live"], "default": "live"},
         "arm_live_trading": {"type": "boolean", "default": false}
       }
     },
@@ -34,7 +34,7 @@
       "required": ["symbol", "price_source"],
       "additionalProperties": false,
       "properties": {
-        "symbol": {"type": "string", "minLength": 1},
+        "symbol": {"type": "string", "minLength": 1, "default": "XRP/USD"},
         "price_source": {"type": "string", "minLength": 1}
       }
     },

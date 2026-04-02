@@ -14,6 +14,7 @@ from domain.models import (
     StrategyConfig,
     TelemetryConfig,
 )
+from exchange.symbols import canonical_symbol, mock_spot_venue_symbol
 
 
 def normalize_config(raw: dict) -> EngineConfig:
@@ -24,7 +25,11 @@ def normalize_config(raw: dict) -> EngineConfig:
             arm_live_trading=raw["runtime"]["arm_live_trading"],
         ),
         exchange=ExchangeConfig(**raw["exchange"]),
-        market=MarketConfig(**raw["market"]),
+        market=MarketConfig(
+            symbol=canonical_symbol(raw["market"]["symbol"]),
+            venue_symbol=mock_spot_venue_symbol(raw["market"]["symbol"]),
+            price_source=raw["market"]["price_source"],
+        ),
         strategy=StrategyConfig(
             grid_type=GridType(raw["strategy"]["grid_type"]),
             spacing_type=SpacingType(raw["strategy"]["spacing_type"]),
