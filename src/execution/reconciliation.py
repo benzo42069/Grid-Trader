@@ -11,7 +11,7 @@ def reconcile(snapshot: PersistedSnapshot | None, exchange_open_orders: list[Ope
     remote_ids = {o.client_order_id for o in exchange_open_orders}
 
     consistent = sorted(list(local_ids & remote_ids))
-    missing_locally = sorted(list(remote_ids - local_ids))
+    missing_locally: list[str] = []
     missing_remotely = sorted(list(local_ids - remote_ids))
-    orphan = list(missing_locally)
+    orphan = sorted(list(remote_ids - local_ids))
     return ReconciliationResult(consistent, missing_locally, missing_remotely, [], orphan)

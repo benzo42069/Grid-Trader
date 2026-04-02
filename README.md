@@ -12,6 +12,11 @@ This repository implements a **safety-first** crypto spot grid trading engine MV
 - local SQLite journal + snapshot persistence
 - risk-authoritative stop flow
 
+Default strategy templates are now:
+- symbol: `XRP/USD` (human-facing canonical form)
+- mode: `live` for the live example, with explicit arming required
+- paper mode remains available via `config/examples/paper_spot_grid.json`
+
 ## Quick start
 
 ```bash

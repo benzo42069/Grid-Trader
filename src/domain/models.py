@@ -132,6 +132,7 @@ class ExchangeConfig:
 @dataclass(slots=True)
 class MarketConfig:
     symbol: str
+    venue_symbol: str
     price_source: str
 
 

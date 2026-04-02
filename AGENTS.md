@@ -160,6 +160,7 @@ These are authoritative for MVP and should not be changed casually:
 - no live config mutation
 - live mode requires explicit arm flag
 - schema version = `1.0.0`
+- default human-facing symbol for templates = `XRP/USD`
 
 ### Configurable
 

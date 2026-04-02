@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from pathlib import Path
+from sqlite3 import Error as SQLiteError
 
 from domain.models import BalanceSnapshot, InventorySnapshot, OpenOrder, PersistedSnapshot, PnLSnapshot
 
@@ -19,6 +20,13 @@ class SQLiteStore:
         cur.execute("CREATE TABLE IF NOT EXISTS journal (id INTEGER PRIMARY KEY, event_type TEXT NOT NULL, payload TEXT NOT NULL)")
         cur.execute("CREATE TABLE IF NOT EXISTS snapshots (id INTEGER PRIMARY KEY, state TEXT NOT NULL, payload TEXT NOT NULL)")
         self.conn.commit()
+
+    def is_healthy(self) -> bool:
+        try:
+            self.conn.execute("SELECT 1")
+            return True
+        except SQLiteError:
+            return False
 
     def journal(self, event_type: str, payload: dict) -> None:
         self.conn.execute("INSERT INTO journal(event_type, payload) VALUES(?, ?)", (event_type, json.dumps(payload)))

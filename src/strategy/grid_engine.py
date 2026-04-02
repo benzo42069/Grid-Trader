@@ -28,12 +28,19 @@ class GridEngine:
         self.store.journal("config_loaded", {})
         self.state.transition(EngineState.LOADING_METADATA)
         constraints = self.adapter.load_symbol_constraints(self.cfg.market.symbol)
+        if not self.store.is_healthy():
+            self.stop("persistence unavailable")
+            return
         self.store.journal("metadata_loaded", {"symbol": self.cfg.market.symbol})
         self.state.transition(EngineState.RECONCILING)
         rec = reconcile(self.store.load_snapshot(), self.adapter.fetch_open_orders(self.cfg.market.symbol))
         self.store.journal("reconciliation_completed", {"mismatches": rec.mismatch_count})
         if rec.mismatch_count > self.cfg.risk.max_reconciliation_mismatches:
             self.stop("reconciliation mismatch")
+            return
+        health = self.adapter.health_check()
+        if not health.market_data_ok or not health.private_stream_ok:
+            self.stop("exchange stream unhealthy")
             return
 
         armed = EngineState.ARMED_LIVE if self.cfg.runtime.mode == RuntimeMode.LIVE else EngineState.ARMED_PAPER
@@ -45,6 +52,7 @@ class GridEngine:
         self.state.transition(EngineState.RUNNING)
 
     def on_private_updates(self) -> None:
+        self.risk.note_private_stream_heartbeat()
         for fill in self.adapter.read_private_updates(self.cfg.market.symbol):
             self.fill_processor.process(fill)
 
