@@ -14,10 +14,17 @@ from domain.models import (
     StrategyConfig,
     TelemetryConfig,
 )
-from exchange.symbols import canonical_symbol, mock_spot_venue_symbol
+from exchange.symbols import canonical_symbol, kraken_venue_symbol, mock_spot_venue_symbol
 
 
 def normalize_config(raw: dict) -> EngineConfig:
+    exchange_name = raw["exchange"]["name"].lower()
+    symbol = canonical_symbol(raw["market"]["symbol"])
+    if exchange_name == "kraken":
+        venue_symbol = kraken_venue_symbol(symbol)
+    else:
+        venue_symbol = mock_spot_venue_symbol(symbol)
+
     return EngineConfig(
         meta=MetaConfig(
             schema_version=raw["meta"]["schema_version"],
@@ -29,8 +36,8 @@ def normalize_config(raw: dict) -> EngineConfig:
         ),
         exchange=ExchangeConfig(**raw["exchange"]),
         market=MarketConfig(
-            symbol=canonical_symbol(raw["market"]["symbol"]),
-            venue_symbol=mock_spot_venue_symbol(raw["market"]["symbol"]),
+            symbol=symbol,
+            venue_symbol=venue_symbol,
             price_source=raw["market"]["price_source"],
         ),
         strategy=StrategyConfig(

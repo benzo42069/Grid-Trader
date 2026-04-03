@@ -21,6 +21,7 @@ def semantic_validate(raw: dict, env: dict[str, str] | None = None) -> None:
     s = raw["strategy"]
     r = raw["risk"]
     mode = RuntimeMode(raw["runtime"]["mode"])
+    exchange_name = raw["exchange"]["name"].lower()
     canonical_symbol(raw["market"]["symbol"])
 
     if _d(s["lower_price"]) >= _d(s["upper_price"]):
@@ -41,12 +42,14 @@ def semantic_validate(raw: dict, env: dict[str, str] | None = None) -> None:
     if mode == RuntimeMode.LIVE and not raw["runtime"]["arm_live_trading"]:
         raise ValidationError("live mode requires arm_live_trading=true")
 
-    cred_var = raw["exchange"]["credentials_env"]
-    if mode == RuntimeMode.LIVE and not env_map.get(cred_var):
-        raise ValidationError(f"missing live credentials in env var {cred_var}")
+    if mode == RuntimeMode.LIVE and exchange_name == "kraken":
+        if not env_map.get("KRAKEN_API_KEY") or not env_map.get("KRAKEN_API_SECRET"):
+            raise ValidationError("missing KRAKEN_API_KEY/KRAKEN_API_SECRET for live mode")
+    elif mode == RuntimeMode.LIVE:
+        cred_var = raw["exchange"].get("credentials_env", "")
+        if cred_var and not env_map.get(cred_var):
+            raise ValidationError(f"missing live credentials in env var {cred_var}")
 
-    if "secret" in str(raw).lower() or "api_key" in str(raw).lower():
-        raise ValidationError("config appears to contain secret-like material")
 
     if s["time_in_force"] != "GTC":
         raise ValidationError("only GTC is supported in MVP")

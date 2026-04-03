@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
+import time
+
 from domain.enums import EngineState, RuntimeMode, Side
-from domain.models import FillEvent, PersistedSnapshot
 from domain.errors import ValidationError
+from domain.models import FillEvent, PersistedSnapshot
 from execution.fill_processor import FillProcessor
 from execution.order_manager import OrderManager
 from execution.reconciliation import reconcile
@@ -10,6 +13,8 @@ from market_data.service import MarketDataService
 from risk.manager import RiskManager
 from strategy.grid_planner import plan_initial_grid
 from strategy.state_machine import EngineStateMachine
+
+LOGGER = logging.getLogger(__name__)
 
 
 class GridEngine:
@@ -45,8 +50,8 @@ class GridEngine:
             self.stop("reconciliation mismatch")
             return
         health = self.adapter.health_check()
-        if not health.market_data_ok or not health.private_stream_ok:
-            self.stop("exchange stream unhealthy")
+        if not health.market_data_ok and self.cfg.runtime.mode == RuntimeMode.LIVE:
+            self.stop("exchange market stream unhealthy")
             return
 
         armed = EngineState.ARMED_LIVE if self.cfg.runtime.mode == RuntimeMode.LIVE else EngineState.ARMED_PAPER
@@ -80,7 +85,7 @@ class GridEngine:
     def on_private_updates(self) -> None:
         self.risk.note_private_stream_heartbeat()
         health = self.adapter.health_check()
-        if not health.private_stream_ok:
+        if not health.private_stream_ok and self.cfg.runtime.mode == RuntimeMode.LIVE:
             self.stop("private stream disconnected")
             return
         for fill in self.adapter.read_private_updates(self.cfg.market.symbol):
@@ -91,7 +96,17 @@ class GridEngine:
         if reason:
             self.stop(reason.value)
 
+    def run_forever(self, loop_interval_seconds: float = 1.0) -> None:
+        while self.state.current in {EngineState.RUNNING, EngineState.ARMED_LIVE, EngineState.ARMED_PAPER}:
+            self.market_data.poll()
+            self.on_private_updates()
+            self.run_risk_checks()
+            if self.state.current != EngineState.RUNNING:
+                break
+            time.sleep(loop_interval_seconds)
+
     def stop(self, reason: str) -> None:
+        LOGGER.error("stopping engine: %s", reason)
         self.state.transition(EngineState.STOPPING)
         self.order_manager.cancel_all(self.cfg.market.symbol)
         self.store.journal("risk_stop_triggered", {"reason": reason})

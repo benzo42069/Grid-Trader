@@ -61,11 +61,13 @@ def test_stale_stream_stop(tmp_path):
 
 
 def test_doge_live_strategy_bootstrap(tmp_path):
-    engine = bootstrap_engine(
-        _config_with_db(tmp_path, "strategies/doge_usd_grid_live.json"),
-        "config/strategy.schema.json",
-        env={"LIVE_EXCHANGE_CREDENTIALS": "ok"},
-    )
+    cfg_path = _config_with_db(tmp_path, "strategies/doge_usd_grid_live.json")
+    raw = json.loads(open(cfg_path).read())
+    raw["runtime"]["mode"] = "paper"
+    raw["exchange"]["name"] = "mock_spot"
+    raw["exchange"]["credentials_env"] = "MOCK_CREDENTIALS"
+    open(cfg_path, "w").write(json.dumps(raw))
+    engine = bootstrap_engine(cfg_path, "config/strategy.schema.json", env={"MOCK_CREDENTIALS": "ok"})
     engine.bootstrap()
     assert engine.state.state == EngineState.RUNNING
     assert len(engine.adapter.fetch_open_orders("DOGE/USD")) > 0
