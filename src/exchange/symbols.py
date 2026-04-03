@@ -22,3 +22,8 @@ def mock_spot_venue_symbol(symbol: str) -> str:
     canonical = canonical_symbol(symbol)
     base, quote = canonical.split("/", 1)
     return f"{base}-{quote}"
+
+
+def kraken_venue_symbol(symbol: str) -> str:
+    canonical = canonical_symbol(symbol)
+    return canonical

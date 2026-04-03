@@ -38,6 +38,6 @@ def test_doge_live_strategy_loads():
     cfg = load_and_validate_config(
         "strategies/doge_usd_grid_live.json",
         "config/strategy.schema.json",
-        env={"LIVE_EXCHANGE_CREDENTIALS": "set"},
+        env={"KRAKEN_API_KEY": "set", "KRAKEN_API_SECRET": "set"},
     )
     assert cfg.market.symbol == "DOGE/USD"

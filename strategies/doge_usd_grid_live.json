@@ -7,8 +7,8 @@
     "arm_live_trading": true
   },
   "exchange": {
-    "name": "mock_spot",
-    "credentials_env": "LIVE_EXCHANGE_CREDENTIALS"
+    "name": "kraken",
+    "credentials_env": "KRAKEN_API_KEY"
   },
   "market": {
     "symbol": "DOGE/USD",
@@ -32,8 +32,8 @@
     "max_daily_loss_quote": "250",
     "max_reject_streak": 3,
     "max_open_orders": 16,
-    "stale_market_data_seconds": 10,
-    "stale_private_stream_seconds": 10,
+    "stale_market_data_seconds": 15,
+    "stale_private_stream_seconds": 30,
     "max_reconciliation_mismatches": 1
   },
   "persistence": {

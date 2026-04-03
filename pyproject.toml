@@ -9,12 +9,18 @@ description = "Safety-first spot grid trading engine MVP"
 requires-python = ">=3.11"
 dependencies = [
   "jsonschema>=4.22.0",
+  "requests>=2.32.0",
+  "websocket-client>=1.8.0",
+  "python-dotenv>=1.0.1",
 ]
 
 [project.optional-dependencies]
 dev = [
   "pytest>=8.2.0",
 ]
+
+[project.scripts]
+crypt_ex = "app.cli:run"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
