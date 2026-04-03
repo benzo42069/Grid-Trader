@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from domain.enums import OrderStatus
 from domain.models import OpenOrder, PersistedSnapshot, ReconciliationResult
 
 
@@ -14,4 +15,8 @@ def reconcile(snapshot: PersistedSnapshot | None, exchange_open_orders: list[Ope
     missing_locally: list[str] = []
     missing_remotely = sorted(list(local_ids - remote_ids))
     orphan = sorted(list(remote_ids - local_ids))
-    return ReconciliationResult(consistent, missing_locally, missing_remotely, [], orphan)
+    ambiguous = sorted(
+        o.client_order_id for o in exchange_open_orders if o.status in {OrderStatus.UNKNOWN, OrderStatus.PARTIALLY_FILLED}
+    )
+    consistent = [cid for cid in consistent if cid not in set(ambiguous)]
+    return ReconciliationResult(consistent, missing_locally, missing_remotely, ambiguous, orphan)

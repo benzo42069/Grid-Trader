@@ -30,7 +30,7 @@ class DummyAdapter:
 
 def test_duplicate_logical_order_prevented():
     ledger = BalanceLedger(BalanceSnapshot(Decimal("1000"), Decimal("0"), Decimal("1000"), Decimal("0")))
-    manager = OrderManager(DummyAdapter(), ledger, DummyStore())
+    manager = OrderManager(DummyAdapter(), ledger, DummyStore(), max_open_orders=5)
     intent = OrderIntent(
         symbol="XRP/USD",
         side=Side.BUY,

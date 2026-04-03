@@ -11,33 +11,33 @@
     "credentials_env": "LIVE_EXCHANGE_CREDENTIALS"
   },
   "market": {
-    "symbol": "XRP/USD",
+    "symbol": "DOGE/USD",
     "price_source": "exchange_best_bid_ask"
   },
   "strategy": {
     "grid_type": "static_neutral",
-    "spacing_type": "geometric",
-    "lower_price": "0.45",
-    "upper_price": "0.75",
-    "num_levels": 5,
+    "spacing_type": "arithmetic",
+    "lower_price": "0.12",
+    "upper_price": "0.22",
+    "num_levels": 8,
     "anchor_price_mode": "midpoint",
-    "total_quote_allocation": "1200",
+    "total_quote_allocation": "2000",
     "per_level_sizing_mode": "equal_quote",
     "post_only": true,
     "time_in_force": "GTC"
   },
   "risk": {
-    "max_inventory_base": "1200",
-    "max_drawdown_pct": "15",
-    "max_daily_loss_quote": "400",
+    "max_inventory_base": "3000",
+    "max_drawdown_pct": "12",
+    "max_daily_loss_quote": "250",
     "max_reject_streak": 3,
+    "max_open_orders": 16,
     "stale_market_data_seconds": 10,
     "stale_private_stream_seconds": 10,
-    "max_reconciliation_mismatches": 2,
-    "max_open_orders": 12
+    "max_reconciliation_mismatches": 1
   },
   "persistence": {
-    "sqlite_path": "./grid_trader_live.db",
+    "sqlite_path": "./grid_trader_doge_live.db",
     "snapshot_interval_seconds": 20
   },
   "telemetry": {

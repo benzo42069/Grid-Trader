@@ -1,8 +1,19 @@
 {
-  "meta": {"schema_version": "1.0.0"},
-  "runtime": {"mode": "paper", "arm_live_trading": false},
-  "exchange": {"name": "mock_spot", "credentials_env": "MOCK_CREDENTIALS"},
-  "market": {"symbol": "XRP/USD", "price_source": "mock_ticker"},
+  "meta": {
+    "schema_version": "1.0.0"
+  },
+  "runtime": {
+    "mode": "paper",
+    "arm_live_trading": false
+  },
+  "exchange": {
+    "name": "mock_spot",
+    "credentials_env": "MOCK_CREDENTIALS"
+  },
+  "market": {
+    "symbol": "XRP/USD",
+    "price_source": "mock_ticker"
+  },
   "strategy": {
     "grid_type": "static_neutral",
     "spacing_type": "arithmetic",
@@ -22,8 +33,14 @@
     "max_reject_streak": 3,
     "stale_market_data_seconds": 20,
     "stale_private_stream_seconds": 20,
-    "max_reconciliation_mismatches": 2
+    "max_reconciliation_mismatches": 2,
+    "max_open_orders": 12
   },
-  "persistence": {"sqlite_path": "./grid_trader.db", "snapshot_interval_seconds": 30},
-  "telemetry": {"log_level": "INFO"}
+  "persistence": {
+    "sqlite_path": "./grid_trader.db",
+    "snapshot_interval_seconds": 30
+  },
+  "telemetry": {
+    "log_level": "INFO"
+  }
 }

@@ -17,6 +17,7 @@ class RiskManager:
         self.kill_switch = KillSwitch()
         self.reject_streak = 0
         self.last_private_update_ts = datetime.now(timezone.utc)
+        self.peak_realized_quote = Decimal("0")
 
     def check(self):
         inv = check_inventory(self.cfg.max_inventory_base, self.ledgers["inventory"].snapshot.base_qty)
@@ -24,7 +25,16 @@ class RiskManager:
             self.kill_switch.trigger(inv)
             return inv
 
-        if self.ledgers["pnl"].snapshot.realized_quote <= -self.cfg.max_daily_loss_quote:
+        realized_quote = self.ledgers["pnl"].snapshot.realized_quote
+        if realized_quote > self.peak_realized_quote:
+            self.peak_realized_quote = realized_quote
+        if self.peak_realized_quote > Decimal("0"):
+            drawdown_pct = ((self.peak_realized_quote - realized_quote) / self.peak_realized_quote) * Decimal("100")
+            if drawdown_pct >= self.cfg.max_drawdown_pct:
+                self.kill_switch.trigger(RiskStopReason.MAX_DRAWDOWN)
+                return RiskStopReason.MAX_DRAWDOWN
+
+        if realized_quote <= -self.cfg.max_daily_loss_quote:
             self.kill_switch.trigger(RiskStopReason.MAX_DAILY_LOSS)
             return RiskStopReason.MAX_DAILY_LOSS
 

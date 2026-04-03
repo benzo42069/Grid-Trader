@@ -3,6 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from config.loader import load_and_validate_config
+from domain.enums import RuntimeMode
 from domain.models import BalanceSnapshot, InventorySnapshot, PnLSnapshot
 from exchange.adapters.mock_spot import MockSpotAdapter
 from ledger.balances import BalanceLedger
@@ -19,7 +20,15 @@ def bootstrap_engine(config_path: str, schema_path: str, env: dict[str, str] | N
     configure_logging(cfg.telemetry.log_level)
     adapter = MockSpotAdapter()
     store = SQLiteStore(cfg.persistence.sqlite_path)
-    start_bal = adapter.fetch_balances(cfg.market.symbol)
+    if cfg.runtime.mode == RuntimeMode.PAPER:
+        start_bal = BalanceSnapshot(
+            free_quote=Decimal("100000"),
+            locked_quote=Decimal("0"),
+            free_base=Decimal("10000"),
+            locked_base=Decimal("0"),
+        )
+    else:
+        start_bal = adapter.fetch_balances(cfg.market.symbol)
     ledgers = {
         "balances": BalanceLedger(BalanceSnapshot(start_bal.free_quote, start_bal.locked_quote, start_bal.free_base, start_bal.locked_base)),
         "inventory": InventoryLedger(InventorySnapshot(Decimal("0"), Decimal("0"))),
