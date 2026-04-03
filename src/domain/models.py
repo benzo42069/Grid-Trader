@@ -115,6 +115,7 @@ class PnLSnapshot:
 @dataclass(slots=True)
 class MetaConfig:
     schema_version: str
+    config_hash: str
 
 
 @dataclass(slots=True)
@@ -156,6 +157,7 @@ class RiskConfig:
     max_drawdown_pct: Decimal
     max_daily_loss_quote: Decimal
     max_reject_streak: int
+    max_open_orders: int
     stale_market_data_seconds: int
     stale_private_stream_seconds: int
     max_reconciliation_mismatches: int
@@ -191,6 +193,7 @@ class PersistedSnapshot:
     inventory: InventorySnapshot
     pnl: PnLSnapshot
     open_orders: list[OpenOrder]
+    config_hash: str = ""
     ts: datetime = field(default_factory=utc_now)
 
 

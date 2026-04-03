@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from domain.enums import EngineState, RuntimeMode, Side
-from domain.models import FillEvent
+from domain.models import FillEvent, PersistedSnapshot
+from domain.errors import ValidationError
 from execution.fill_processor import FillProcessor
 from execution.order_manager import OrderManager
 from execution.reconciliation import reconcile
@@ -18,14 +19,19 @@ class GridEngine:
         self.store = store
         self.telemetry = telemetry
         self.state = EngineStateMachine()
-        self.order_manager = OrderManager(adapter, ledgers["balances"], store)
+        self.order_manager = OrderManager(
+            adapter,
+            ledgers["balances"],
+            store,
+            max_open_orders=cfg.risk.max_open_orders,
+        )
         self.fill_processor = FillProcessor(ledgers, store)
         self.market_data = MarketDataService(adapter, cfg.market.symbol)
         self.risk = RiskManager(cfg.risk, ledgers, self.market_data.cache)
 
     def bootstrap(self) -> None:
         self.state.transition(EngineState.VALIDATING_CONFIG)
-        self.store.journal("config_loaded", {})
+        self.store.journal("config_loaded", {"config_hash": self.cfg.meta.config_hash})
         self.state.transition(EngineState.LOADING_METADATA)
         constraints = self.adapter.load_symbol_constraints(self.cfg.market.symbol)
         if not self.store.is_healthy():
@@ -47,12 +53,36 @@ class GridEngine:
         self.state.transition(armed)
         self.state.transition(EngineState.PLACING_INITIAL_GRID)
         market = self.market_data.poll()
+        if market is None:
+            self.stop("market data unavailable")
+            return
         for intent in plan_initial_grid(self.cfg, market, constraints):
-            self.order_manager.submit(intent)
+            if self.risk.check():
+                self.stop("risk gate failed before order submit")
+                return
+            try:
+                self.order_manager.submit(intent)
+            except ValidationError as exc:
+                self.stop(f"order submit blocked: {exc}")
+                return
+        self.store.write_snapshot(
+            PersistedSnapshot(
+                state=EngineState.RUNNING.value,
+                balances=self.fill_processor.balance.snapshot,
+                inventory=self.fill_processor.inventory.snapshot,
+                pnl=self.fill_processor.pnl.snapshot,
+                open_orders=self.adapter.fetch_open_orders(self.cfg.market.symbol),
+                config_hash=self.cfg.meta.config_hash,
+            )
+        )
         self.state.transition(EngineState.RUNNING)
 
     def on_private_updates(self) -> None:
         self.risk.note_private_stream_heartbeat()
+        health = self.adapter.health_check()
+        if not health.private_stream_ok:
+            self.stop("private stream disconnected")
+            return
         for fill in self.adapter.read_private_updates(self.cfg.market.symbol):
             self.fill_processor.process(fill)
 

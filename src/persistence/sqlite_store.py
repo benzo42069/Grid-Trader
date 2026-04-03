@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from dataclasses import asdict
+from decimal import Decimal
+from enum import Enum
 from pathlib import Path
 from sqlite3 import Error as SQLiteError
 
@@ -32,15 +35,27 @@ class SQLiteStore:
         self.conn.execute("INSERT INTO journal(event_type, payload) VALUES(?, ?)", (event_type, json.dumps(payload)))
         self.conn.commit()
 
+    def _json_ready(self, obj):
+        if isinstance(obj, Enum):
+            return obj.value
+        if isinstance(obj, Decimal):
+            return str(obj)
+        if isinstance(obj, dict):
+            return {k: self._json_ready(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [self._json_ready(v) for v in obj]
+        return obj
+
     def write_snapshot(self, snapshot: PersistedSnapshot) -> None:
         payload = {
-            "balances": snapshot.balances.__dict__,
-            "inventory": snapshot.inventory.__dict__,
-            "pnl": snapshot.pnl.__dict__,
-            "open_orders": [o.__dict__ for o in snapshot.open_orders],
+            "balances": asdict(snapshot.balances),
+            "inventory": asdict(snapshot.inventory),
+            "pnl": asdict(snapshot.pnl),
+            "open_orders": [asdict(o) for o in snapshot.open_orders],
+            "config_hash": snapshot.config_hash,
             "ts": snapshot.ts.isoformat(),
         }
-        self.conn.execute("INSERT INTO snapshots(state, payload) VALUES(?, ?)", (snapshot.state, json.dumps(payload, default=str)))
+        self.conn.execute("INSERT INTO snapshots(state, payload) VALUES(?, ?)", (snapshot.state, json.dumps(self._json_ready(payload))))
         self.conn.commit()
 
     def load_snapshot(self) -> PersistedSnapshot | None:
@@ -52,8 +67,9 @@ class SQLiteStore:
         orders = [OpenOrder(**o) for o in payload["open_orders"]]
         return PersistedSnapshot(
             state=state,
-            balances=BalanceSnapshot(**payload["balances"]),
-            inventory=InventorySnapshot(**payload["inventory"]),
-            pnl=PnLSnapshot(**payload["pnl"]),
+            balances=BalanceSnapshot(**{k: Decimal(v) for k, v in payload["balances"].items()}),
+            inventory=InventorySnapshot(**{k: Decimal(v) for k, v in payload["inventory"].items()}),
+            pnl=PnLSnapshot(**{k: Decimal(v) for k, v in payload["pnl"].items()}),
             open_orders=orders,
+            config_hash=payload.get("config_hash", ""),
         )

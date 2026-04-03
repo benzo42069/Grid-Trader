@@ -19,7 +19,10 @@ from exchange.symbols import canonical_symbol, mock_spot_venue_symbol
 
 def normalize_config(raw: dict) -> EngineConfig:
     return EngineConfig(
-        meta=MetaConfig(schema_version=raw["meta"]["schema_version"]),
+        meta=MetaConfig(
+            schema_version=raw["meta"]["schema_version"],
+            config_hash=raw["meta"]["config_hash"],
+        ),
         runtime=RuntimeConfig(
             mode=RuntimeMode(raw["runtime"]["mode"]),
             arm_live_trading=raw["runtime"]["arm_live_trading"],
@@ -47,6 +50,7 @@ def normalize_config(raw: dict) -> EngineConfig:
             max_drawdown_pct=Decimal(raw["risk"]["max_drawdown_pct"]),
             max_daily_loss_quote=Decimal(raw["risk"]["max_daily_loss_quote"]),
             max_reject_streak=raw["risk"]["max_reject_streak"],
+            max_open_orders=raw["risk"]["max_open_orders"],
             stale_market_data_seconds=raw["risk"]["stale_market_data_seconds"],
             stale_private_stream_seconds=raw["risk"]["stale_private_stream_seconds"],
             max_reconciliation_mismatches=raw["risk"]["max_reconciliation_mismatches"],

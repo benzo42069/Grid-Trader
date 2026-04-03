@@ -9,7 +9,10 @@
       "type": "object",
       "required": ["schema_version"],
       "additionalProperties": false,
-      "properties": {"schema_version": {"type": "string", "const": "1.0.0"}}
+      "properties": {
+        "schema_version": {"type": "string", "const": "1.0.0"},
+        "config_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
     },
     "runtime": {
       "type": "object",
@@ -35,7 +38,7 @@
       "additionalProperties": false,
       "properties": {
         "symbol": {"type": "string", "minLength": 1, "default": "XRP/USD"},
-        "price_source": {"type": "string", "minLength": 1}
+        "price_source": {"type": "string", "enum": ["mock_ticker", "exchange_best_bid_ask"]}
       }
     },
     "strategy": {
@@ -48,22 +51,23 @@
         "lower_price": {"type": "string"},
         "upper_price": {"type": "string"},
         "num_levels": {"type": "integer", "minimum": 2},
-        "anchor_price_mode": {"type": "string", "minLength": 1},
+        "anchor_price_mode": {"type": "string", "enum": ["midpoint"]},
         "total_quote_allocation": {"type": "string"},
-        "per_level_sizing_mode": {"type": "string", "minLength": 1},
+        "per_level_sizing_mode": {"type": "string", "enum": ["equal_quote"]},
         "post_only": {"type": "boolean", "default": true},
         "time_in_force": {"type": "string", "const": "GTC", "default": "GTC"}
       }
     },
     "risk": {
       "type": "object",
-      "required": ["max_inventory_base", "max_drawdown_pct", "max_daily_loss_quote", "max_reject_streak", "stale_market_data_seconds", "stale_private_stream_seconds", "max_reconciliation_mismatches"],
+      "required": ["max_inventory_base", "max_drawdown_pct", "max_daily_loss_quote", "max_reject_streak", "max_open_orders", "stale_market_data_seconds", "stale_private_stream_seconds", "max_reconciliation_mismatches"],
       "additionalProperties": false,
       "properties": {
         "max_inventory_base": {"type": "string"},
         "max_drawdown_pct": {"type": "string"},
         "max_daily_loss_quote": {"type": "string"},
         "max_reject_streak": {"type": "integer", "minimum": 1},
+        "max_open_orders": {"type": "integer", "minimum": 1},
         "stale_market_data_seconds": {"type": "integer", "minimum": 1},
         "stale_private_stream_seconds": {"type": "integer", "minimum": 1},
         "max_reconciliation_mismatches": {"type": "integer", "minimum": 1}

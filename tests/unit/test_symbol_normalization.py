@@ -27,6 +27,7 @@ def test_symbol_normalization_from_dash(tmp_path):
     "max_drawdown_pct": "20",
     "max_daily_loss_quote": "300",
     "max_reject_streak": 3,
+    "max_open_orders": 8,
     "stale_market_data_seconds": 20,
     "stale_private_stream_seconds": 20,
     "max_reconciliation_mismatches": 2

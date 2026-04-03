@@ -33,6 +33,10 @@ def semantic_validate(raw: dict, env: dict[str, str] | None = None) -> None:
     for key in ["max_inventory_base", "max_drawdown_pct", "max_daily_loss_quote"]:
         if _d(r[key]) <= 0:
             raise ValidationError(f"{key} must be > 0")
+    if int(r["max_open_orders"]) < 1:
+        raise ValidationError("max_open_orders must be >= 1")
+    if _d(r["max_drawdown_pct"]) > Decimal("100"):
+        raise ValidationError("max_drawdown_pct must be <= 100")
 
     if mode == RuntimeMode.LIVE and not raw["runtime"]["arm_live_trading"]:
         raise ValidationError("live mode requires arm_live_trading=true")

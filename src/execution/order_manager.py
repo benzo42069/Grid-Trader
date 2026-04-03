@@ -5,16 +5,20 @@ from domain.models import OrderIntent
 
 
 class OrderManager:
-    def __init__(self, adapter, balance_ledger, store) -> None:
+    def __init__(self, adapter, balance_ledger, store, *, max_open_orders: int, max_cancel_per_batch: int = 50) -> None:
         self.adapter = adapter
         self.balance_ledger = balance_ledger
         self.store = store
+        self.max_open_orders = max_open_orders
+        self.max_cancel_per_batch = max_cancel_per_batch
         self.inflight: set[str] = set()
         self.active_client_order_ids: set[str] = set()
 
     def submit(self, intent: OrderIntent):
         if intent.client_order_id in self.inflight or intent.client_order_id in self.active_client_order_ids:
             raise ValidationError("duplicate client order id")
+        if len(self.active_client_order_ids) >= self.max_open_orders:
+            raise ValidationError("max_open_orders reached")
         self.balance_ledger.reserve_for_order(intent)
         self.store.journal("order_intent_created", {"cid": intent.client_order_id})
         self.inflight.add(intent.client_order_id)
@@ -38,4 +42,12 @@ class OrderManager:
         return res
 
     def cancel_all(self, symbol: str):
-        return self.adapter.cancel_all_managed_orders(symbol)
+        active_ids = list(self.active_client_order_ids)
+        results = []
+        for client_order_id in active_ids[: self.max_cancel_per_batch]:
+            result = self.adapter.cancel_managed_order(symbol, client_order_id)
+            if result.canceled:
+                self.active_client_order_ids.discard(client_order_id)
+            results.append(result)
+        self.store.journal("cancel_all_executed", {"count": len(results)})
+        return results
